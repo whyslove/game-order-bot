@@ -1,0 +1,22 @@
+FROM golang:1.18.1-alpine3.15 as prepare
+
+WORKDIR /source
+
+COPY vendor .
+
+FROM prepare AS build
+RUN apk update \
+    && apk upgrade \
+    && apk add --no-cache \
+    ca-certificates \
+    && update-ca-certificates 2>/dev/null || true
+COPY . .
+
+RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o bin/volbot cmd/service/main.go
+
+
+FROM scratch as run
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=build /source/bin/volbot /volbot
+
+ENTRYPOINT ["/volbot"]

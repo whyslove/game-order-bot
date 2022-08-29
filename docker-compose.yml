@@ -1,8 +1,11 @@
 version: '3.8'
 services:
   db:
+    container_name: db
     image: postgres:14.1-alpine
     restart: always
+    env_file:
+      - .env.compose
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
@@ -10,9 +13,19 @@ services:
     ports:
       - '5435:5432'
     volumes:
-      - ./.db:/var/lib/postgresql/data
+      - ./_db/postgres_data:/var/lib/postgresql/data
+
+  volbot:
+    depends_on:
+      - db
+    container_name: "volbot"
+    build:
+      context: "."
+      dockerfile: "./docker/Dockerfile.volbot"
+    restart: "unless-stopped"
     env_file:
-      - .env
+      - .env.compose
+
 volumes:
   db:
     driver: local
