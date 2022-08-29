@@ -60,7 +60,8 @@ func (svc *service) GetAllTodayMatches() []types.MatchQueue {
 	return svc.Matches
 }
 
-func (svc *service) SetMatchPlayed() {
+// leftStays means team that was on the left will play one more game
+func (svc *service) SetMatchPlayed(leftStays bool) {
 	if len(svc.Matches) == 0 {
 		return
 	}
@@ -70,18 +71,12 @@ func (svc *service) SetMatchPlayed() {
 	svc.Matches[svc.CurrentMatchIndex].Played = true
 	svc.Matches[svc.CurrentMatchIndex].Score = "25-25"
 
-	svc.Matches[len(svc.Matches)-1].Team2 = playedMatch.Team1
-	svc.Matches[len(svc.Matches)-1].Team2ID = playedMatch.Team1ID
-
-	newMatch := types.MatchQueue{
-		Team1:       playedMatch.Team1,
-		Team1ID:     playedMatch.Team1ID,
-		Team2:       "",
-		Current:     false,
-		Played:      false,
-		DateCreated: time.Now(),
+	if leftStays {
+		svc.matchPlayedLeftStays(playedMatch)
+	} else {
+		svc.matchPlayedRightStays(playedMatch)
 	}
-	svc.Matches = append(svc.Matches, newMatch)
+
 	// Update index match playing
 	svc.CurrentMatchIndex++
 	svc.Matches[svc.CurrentMatchIndex].Current = true
@@ -104,6 +99,7 @@ func (svc *service) GetTodayTeams() ([]types.Team, error) {
 
 func (svc *service) DeleteTeam(teamID int64) error {
 	// GetTeam
+	// TODO добавить проверку на принадлежность команды этому игроку
 	if len(svc.Matches) <= 2 {
 		return fmt.Errorf("Не хочу удалять когда длина 2 или меньше")
 	}
@@ -177,4 +173,40 @@ func (svc *service) DeleteAllInformationToday() (err error) {
 
 	return nil
 
+}
+
+func (svc *service) matchPlayedLeftStays(playedMatch types.MatchQueue) {
+	svc.Matches[len(svc.Matches)-1].Team2 = playedMatch.Team2
+	svc.Matches[len(svc.Matches)-1].Team2ID = playedMatch.Team2ID
+
+	newMatch := types.MatchQueue{
+		Team1:       playedMatch.Team2,
+		Team1ID:     playedMatch.Team2ID,
+		Team2:       "",
+		Current:     false,
+		Played:      false,
+		DateCreated: time.Now(),
+	}
+	svc.Matches = append(svc.Matches, newMatch)
+
+	//Обновить в некст паре
+	//TODO make better, currentMatchIndex Support Concurrency
+	svc.Matches[svc.CurrentMatchIndex+1].Team1 = playedMatch.Team1
+	svc.Matches[svc.CurrentMatchIndex+1].Team1ID = playedMatch.Team1ID
+
+}
+
+func (svc *service) matchPlayedRightStays(playedMatch types.MatchQueue) {
+	svc.Matches[len(svc.Matches)-1].Team2 = playedMatch.Team1
+	svc.Matches[len(svc.Matches)-1].Team2ID = playedMatch.Team1ID
+
+	newMatch := types.MatchQueue{
+		Team1:       playedMatch.Team1,
+		Team1ID:     playedMatch.Team1ID,
+		Team2:       "",
+		Current:     false,
+		Played:      false,
+		DateCreated: time.Now(),
+	}
+	svc.Matches = append(svc.Matches, newMatch)
 }

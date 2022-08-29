@@ -28,7 +28,7 @@ type ServiceI interface {
 	CreateTeam(name string, ownerID int64, ownerTag string) error
 	GetTodayTeams() ([]types.Team, error)
 	GetAllTodayMatches() []types.MatchQueue
-	SetMatchPlayed()
+	SetMatchPlayed(bool)
 	DeleteTeam(teamID int64) error
 	GetMyTeams(ownderID int64) ([]types.Team, error)
 	DeleteAllInformationToday() error

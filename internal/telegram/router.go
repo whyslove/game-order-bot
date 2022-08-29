@@ -20,8 +20,15 @@ func (tgBot *TelegramBot) RouteMessage(update tgbotapi.Update) {
 		case "keyboard":
 			tgBot.AnswerKeyboard(update.Message.Chat.ID)
 			return
+		case "start":
+			tgBot.AnswerMesasge(update.Message.Chat.ID, "Привет! Напиши /keyboard чтобы появилась клавиатура. Напиши /help для помощи")
+		case "stop":
+			tgBot.states[userID] = ""
+			tgBot.AnswerMesasge(update.Message.Chat.ID, "Состояние сброшено")
+		case "help":
+			tgBot.AnswerHelpMessage(update.Message.Chat.ID)
 		default:
-
+			tgBot.AnswerMesasge(update.Message.Chat.ID, "Команда не распознана")
 		}
 	}
 

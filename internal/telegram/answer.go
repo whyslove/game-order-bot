@@ -81,3 +81,8 @@ func (tgBot *TelegramBot) AnswerMesasge(chatID int64, message string) {
 	msg := tgbotapi.NewMessage(chatID, message)
 	tgBot.sendMessage(msg)
 }
+
+func (tgBot *TelegramBot) AnswerHelpMessage(chatID int64) {
+	msg := tgbotapi.NewMessage(chatID, templates.Help)
+	tgBot.sendMessage(msg)
+}

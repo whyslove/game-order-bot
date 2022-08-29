@@ -16,11 +16,14 @@ func (tgBot *TelegramBot) RouteCallback(update tgbotapi.Update) {
 	chatID := update.FromChat().ID
 
 	switch {
-	case callbackData == "match_played":
-		tgBot.svc.SetMatchPlayed()
+	case callbackData == "right_stays":
+		tgBot.svc.SetMatchPlayed(false)
 		matches := tgBot.svc.GetAllTodayMatches()
 		tgBot.AnswerCurrentMatches(chatID, matches)
-
+	case callbackData == "left_stays":
+		tgBot.svc.SetMatchPlayed(true)
+		matches := tgBot.svc.GetAllTodayMatches()
+		tgBot.AnswerCurrentMatches(chatID, matches)
 	case deleteTeam.MatchString(callbackData):
 		res := strings.Split(callbackData, "|")
 		if len(res) != 2 {
