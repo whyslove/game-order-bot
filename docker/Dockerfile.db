@@ -1,0 +1,4 @@
+FROM postgres:14.0-alpine
+
+ARG MY_USER
+ARG my_pass
