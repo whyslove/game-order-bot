@@ -5,12 +5,19 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/whyslove/game-order-bot/internal/config"
 	"github.com/whyslove/game-order-bot/internal/service"
+	"github.com/whyslove/game-order-bot/internal/telegram/answers"
 )
 
+// var keyInputTeamMembers = "input_team_members"
+var keyTeamID = "team_id"
+var keyTeamName = "team_name"
+
 type TelegramBot struct {
-	bot    *tgbotapi.BotAPI
-	states map[int64]string
-	svc    service.ServiceI
+	bot         *tgbotapi.BotAPI
+	answers     *answers.AnswersTelegram
+	states      map[int64]string
+	userStorage map[int64]map[string]string
+	svc         service.ServiceI
 }
 
 func NewTelegramBot(tgToken string, svc service.ServiceI) (*TelegramBot, error) {
@@ -18,13 +25,17 @@ func NewTelegramBot(tgToken string, svc service.ServiceI) (*TelegramBot, error) 
 	if err != nil {
 		return nil, err
 	}
+	answers := answers.NewAnswers(bot)
 
 	states := make(map[int64]string)
+	userStorage := make(map[int64]map[string]string)
 
 	telegramBot := &TelegramBot{
-		bot:    bot,
-		states: states,
-		svc:    svc,
+		bot:         bot,
+		answers:     answers,
+		states:      states,
+		userStorage: userStorage,
+		svc:         svc,
 	}
 
 	return telegramBot, nil
@@ -43,6 +54,21 @@ func (tgBot *TelegramBot) StartListening(tgOffset int) {
 		continue
 
 	}
+}
+
+func (tgBot *TelegramBot) SetValueToUserStorage(userID int64, key string, value string) {
+	if tgBot.userStorage[userID] == nil {
+		tgBot.userStorage[userID] = make(map[string]string, 0)
+	}
+
+	tgBot.userStorage[userID][key] = value
+}
+
+func (tgBot *TelegramBot) GetValueFromUserStorage(userID int64, key string) string {
+	if tgBot.userStorage[userID] == nil {
+		return ""
+	}
+	return tgBot.userStorage[userID][key]
 }
 
 //TODO: доабвить конкуррентный доступ к мапе

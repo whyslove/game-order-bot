@@ -25,11 +25,14 @@ func NewService(db storage.DatabaseI) *service {
 }
 
 type ServiceI interface {
-	CreateTeam(name string, ownerID int64, ownerTag string) error
-	GetTodayTeams() ([]types.Team, error)
+	CreateTeam(userID int64, name string, ownerID int64, ownerTag string, members string) error
+	GetTodayTeams(userID int64) ([]types.Team, error)
 	GetAllTodayMatches() []types.MatchQueue
-	SetMatchPlayed(bool)
-	DeleteTeam(teamID int64) error
-	GetMyTeams(ownderID int64) ([]types.Team, error)
-	DeleteAllInformationToday() error
+	SetMatchPlayed(userID int64, leftStays bool) error
+	DeleteTeam(userID int64, teamID int64) error
+	UpdateTeamMembers(userID, teamID int64, members string) error
+	GetMyTeams(userID int64) ([]types.Team, error)
+	DeleteAllInformationToday(userID int64) error
+	SaveUser(userID int64, token string, user types.User) error
+	CheckIsAdmin(userID int64) (bool, error)
 }

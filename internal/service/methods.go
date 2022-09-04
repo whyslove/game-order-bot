@@ -1,6 +1,8 @@
 package service
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -8,14 +10,12 @@ import (
 	"github.com/whyslove/game-order-bot/internal/types"
 )
 
-func GetSchedule() {
+var ErrbadToken = errors.New("Неправильный токен")
 
-}
-
-func (svc *service) CreateTeam(name string, ownerID int64, ownerTag string) error {
+func (svc *service) CreateTeam(userID int64, name string, ownerID int64, ownerTag string, members string) error {
 	nowDate := time.Now()
 	deleted := false
-	teamID, err := svc.db.CreateTeam(name, ownerID, ownerTag, nowDate, deleted)
+	teamID, err := svc.db.CreateTeam(name, ownerID, ownerTag, members, nowDate, deleted)
 	if err != nil {
 		return fmt.Errorf("error while creatin team in db, err: %w", err)
 	}
@@ -61,11 +61,34 @@ func (svc *service) GetAllTodayMatches() []types.MatchQueue {
 }
 
 // leftStays means team that was on the left will play one more game
-func (svc *service) SetMatchPlayed(leftStays bool) {
+func (svc *service) SetMatchPlayed(userID int64, leftStays bool) error {
 	if len(svc.Matches) == 0 {
-		return
+		return fmt.Errorf("empty matches")
 	}
 	playedMatch := svc.Matches[svc.CurrentMatchIndex]
+
+	//Check that one of this teams belongs to user
+	// or user is admin and can do what he want
+	user, err := svc.db.GetUser(userID)
+	if err != nil {
+		return fmt.Errorf("error setting match played, getting user %w", err)
+	}
+	if !user.IsAdmin {
+		teams, err := svc.db.GetMyTeams(userID, time.Now())
+		if err != nil {
+			return fmt.Errorf("error setting match played, getting my teams %w", err)
+		}
+
+		oneOfTheTeamsBelongsToUser := false
+		for _, team := range teams {
+			if team.Id == playedMatch.Team1ID || team.Id == playedMatch.Team2ID {
+				oneOfTheTeamsBelongsToUser = true
+			}
+		}
+		if !oneOfTheTeamsBelongsToUser {
+			return fmt.Errorf("no one of the teams belongs to user, err: %w", CantDoThis)
+		}
+	}
 
 	svc.Matches[svc.CurrentMatchIndex].Current = false
 	svc.Matches[svc.CurrentMatchIndex].Played = true
@@ -81,14 +104,14 @@ func (svc *service) SetMatchPlayed(leftStays bool) {
 	svc.CurrentMatchIndex++
 	svc.Matches[svc.CurrentMatchIndex].Current = true
 
-	err := svc.db.SetMatchesQueue(time.Now(), svc.Matches)
+	err = svc.db.SetMatchesQueue(time.Now(), svc.Matches)
 	if err != nil {
 		log.Error().Msgf("error setiing matches queue after match played %s", err.Error())
 	}
-
+	return nil
 }
 
-func (svc *service) GetTodayTeams() ([]types.Team, error) {
+func (svc *service) GetTodayTeams(userID int64) ([]types.Team, error) {
 	nowDate := time.Now()
 	teams, err := svc.db.GetTeamsForDay(nowDate)
 	if err != nil {
@@ -97,9 +120,13 @@ func (svc *service) GetTodayTeams() ([]types.Team, error) {
 	return teams, nil
 }
 
-func (svc *service) DeleteTeam(teamID int64) error {
+func (svc *service) UpdateTeamMembers(userID, teamID int64, members string) error {
+	nowDate := time.Now()
+	return svc.db.UpdateTeamMembers(teamID, nowDate, members)
+}
+
+func (svc *service) DeleteTeam(userID int64, teamID int64) error {
 	// GetTeam
-	// TODO добавить проверку на принадлежность команды этому игроку
 	if len(svc.Matches) <= 2 {
 		return fmt.Errorf("Не хочу удалять когда длина 2 или меньше")
 	}
@@ -137,11 +164,11 @@ func (svc *service) DeleteTeam(teamID int64) error {
 	return nil
 }
 
-func (svc *service) GetMyTeams(ownderID int64) ([]types.Team, error) {
-	return svc.db.GetMyTeams(ownderID, time.Now())
+func (svc *service) GetMyTeams(userID int64) ([]types.Team, error) {
+	return svc.db.GetMyTeams(userID, time.Now())
 }
 
-func (svc *service) DeleteAllInformationToday() (err error) {
+func (svc *service) DeleteAllInformationToday(userID int64) (err error) {
 	tx, err := svc.db.StartTransaction()
 	if err != nil {
 		return fmt.Errorf("error creating transaction err: %w", err)
@@ -209,4 +236,49 @@ func (svc *service) matchPlayedRightStays(playedMatch types.MatchQueue) {
 		DateCreated: time.Now(),
 	}
 	svc.Matches = append(svc.Matches, newMatch)
+}
+
+func (svc *service) SaveUser(userID int64, token string, user types.User) (err error) {
+	tx, err := svc.db.StartTransaction()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				log.Error().Msgf("error in rollbalck err: %s", err.Error())
+			}
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	err = svc.db.GetTokenTx(tx, token)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrbadToken
+		}
+		return err
+	}
+	err = svc.db.SaveUserTx(tx, user)
+	if err != nil {
+		return err
+	}
+
+	err = svc.db.UpdateTokenTx(tx, token)
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
+
+func (svc *service) CheckIsAdmin(userID int64) (bool, error) {
+	user, err := svc.db.GetUser(userID)
+	if err != nil {
+		return false, err
+	}
+	return user.IsAdmin, nil
 }
