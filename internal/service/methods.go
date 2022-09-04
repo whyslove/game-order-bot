@@ -131,10 +131,22 @@ func (svc *service) DeleteTeam(userID int64, teamID int64) error {
 		return fmt.Errorf("Не хочу удалять когда длина 2 или меньше")
 	}
 
+	// Удаление команды, которая сыграла 1 матч и не хочет играть второй
+	cur := svc.CurrentMatchIndex
+	if svc.Matches[cur].Team1ID == teamID {
+		// Вариант, когда играет команда, которая играла до этого. То есть третий матч
+		if svc.CurrentMatchIndex-1 >= 0 {
+			svc.Matches[cur].Team1ID = svc.Matches[cur-1].Team1ID
+			svc.Matches[cur].Team1 = svc.Matches[cur-1].Team1
+			return nil
+		} else {
+			return fmt.Errorf("Не хочу удалять, когда это первый мачт")
+		}
+	}
+
 	var teamWasFound bool
 	//Delete from queue
 	for i := svc.CurrentMatchIndex; i < len(svc.Matches)-1; i++ {
-		//TODO Удаление команды, которая прямо сейчас вышла на поле
 
 		if svc.Matches[i].Team2ID == teamID {
 			teamWasFound = true

@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
@@ -13,6 +15,9 @@ func (gop *gameOrderPostgres) GetUser(userID int64) (types.User, error) {
 	user := types.User{}
 	err := gop.db.Get(&user, query, userID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return types.User{}, nil
+		}
 		return types.User{}, fmt.Errorf("error getting user from db with id: %d, err: %w", userID, err)
 	}
 	return user, nil

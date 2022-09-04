@@ -47,6 +47,7 @@ func (tgBot *TelegramBot) RouteMessage(update tgbotapi.Update) {
 		default:
 			tgBot.answers.AnswerMesasge(chatID, "Команда не распознана")
 		}
+		return
 	}
 
 	// Handle states
@@ -76,6 +77,7 @@ func (tgBot *TelegramBot) RouteMessage(update tgbotapi.Update) {
 		}
 		tgBot.answers.AnswerMesasge(chatID, "Вы получили права админа :)")
 		tgBot.answers.AnswerAdminKeyboard(chatID)
+		return
 
 	case stateInputTeamMembers:
 		tgBot.states[userID] = stateEmpty
@@ -91,7 +93,7 @@ func (tgBot *TelegramBot) RouteMessage(update tgbotapi.Update) {
 			return
 		}
 		tgBot.answers.AnswerTeamCreated(chatID)
-
+		return
 	case stateUpdatingTeamMembers:
 		tgBot.states[userID] = stateEmpty
 		defer func() {
