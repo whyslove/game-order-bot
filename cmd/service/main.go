@@ -1,8 +1,6 @@
 package main
 
 import (
-	"time"
-
 	"github.com/robfig/cron"
 	"github.com/rs/zerolog/log"
 	"github.com/whyslove/game-order-bot/internal/config"
@@ -27,10 +25,8 @@ func main() {
 		log.Fatal().Msgf("error in creating tgBot err: %s", err.Error())
 	}
 
-	customLocation := time.FixedZone("UTC+3", 0)
-	log.Info().Msgf("location: %v", customLocation.String())
-	cronHandler := cron.NewWithLocation(customLocation)
-	cronHandler.AddFunc("0 2 * * *", func() {
+	cronHandler := cron.New()
+	cronHandler.AddFunc("0 5 * * *", func() {
 		tgBot.RefreshMatchesQueue()
 	})
 	cronHandler.Start()
