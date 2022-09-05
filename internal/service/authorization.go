@@ -166,3 +166,7 @@ func (auth *authorization) CheckIsAdmin(userID int64) (bool, error) {
 
 	return auth.svc.CheckIsAdmin(userID)
 }
+
+func (auth *authorization) RefreshMatches() {
+	auth.svc.RefreshMatches()
+}

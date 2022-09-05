@@ -35,4 +35,5 @@ type ServiceI interface {
 	DeleteAllInformationToday(userID int64) error
 	SaveUser(userID int64, token string, user types.User) error
 	CheckIsAdmin(userID int64) (bool, error)
+	RefreshMatches()
 }

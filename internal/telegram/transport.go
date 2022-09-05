@@ -46,7 +46,6 @@ func (tgBot *TelegramBot) StartListening(tgOffset int) {
 	updatesCh := tgBot.bot.GetUpdatesChan(updateConfig)
 	for update := range updatesCh {
 		if update.CallbackQuery != nil {
-			log.Debug().Msg("here")
 			tgBot.RouteCallback(update)
 		} else if update.Message != nil {
 			tgBot.RouteMessage(update)
@@ -54,6 +53,11 @@ func (tgBot *TelegramBot) StartListening(tgOffset int) {
 		continue
 
 	}
+}
+
+func (tgBot *TelegramBot) RefreshMatchesQueue() {
+	log.Debug().Msg("Refreshing queue")
+	tgBot.svc.RefreshMatches()
 }
 
 func (tgBot *TelegramBot) SetValueToUserStorage(userID int64, key string, value string) {

@@ -294,3 +294,7 @@ func (svc *service) CheckIsAdmin(userID int64) (bool, error) {
 	}
 	return user.IsAdmin, nil
 }
+
+func (svc *service) RefreshMatches() {
+	svc.Matches = make([]types.MatchQueue, 0)
+}
