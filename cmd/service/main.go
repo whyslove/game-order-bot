@@ -27,10 +27,10 @@ func main() {
 		log.Fatal().Msgf("error in creating tgBot err: %s", err.Error())
 	}
 
-	customLocation, _ := time.LoadLocation("Europe/Moscow")
+	customLocation := time.FixedZone("UTC+3", 0)
 	log.Info().Msgf("location: %v", customLocation.String())
 	cronHandler := cron.NewWithLocation(customLocation)
-	cronHandler.AddFunc("* * * * *", func() {
+	cronHandler.AddFunc("0 2 * * *", func() {
 		tgBot.RefreshMatchesQueue()
 	})
 	cronHandler.Start()
