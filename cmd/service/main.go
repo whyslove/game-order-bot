@@ -26,7 +26,7 @@ func main() {
 	}
 
 	cronHandler := cron.New()
-	cronHandler.AddFunc("0 5 * * *", func() {
+	cronHandler.AddFunc("0 0 4 * * *", func() {
 		tgBot.RefreshMatchesQueue()
 	})
 	cronHandler.Start()
